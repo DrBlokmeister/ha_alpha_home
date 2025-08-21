@@ -1,11 +1,14 @@
 import logging
 from datetime import timedelta
 
+import requests
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from . import ControllerAPI, GatewayAPI
+from .api import AlphaInnotecApiError
 from .const import DOMAIN, MODULE_TYPE_SENSOR
 from .structs.Thermostat import Thermostat
 from .structs.Valve import Valve
@@ -30,9 +33,12 @@ class AlphaInnotecCoordinator(DataUpdateCoordinator):
         self.gateway_api = hass.data[DOMAIN][self.config_entry.entry_id]['gateway_api']
 
     async def _async_update_data(self) -> dict[str, list[Valve | Thermostat]]:
-        db_modules: dict = await self.hass.async_add_executor_job(self.gateway_api.db_modules)
-        all_modules: dict = await self.hass.async_add_executor_job(self.gateway_api.all_modules)
-        room_list: dict = await self.hass.async_add_executor_job(self.controller_api.room_list)
+        try:
+            db_modules: dict = await self.hass.async_add_executor_job(self.gateway_api.db_modules)
+            all_modules: dict = await self.hass.async_add_executor_job(self.gateway_api.all_modules)
+            room_list: dict = await self.hass.async_add_executor_job(self.controller_api.room_list)
+        except (AlphaInnotecApiError, requests.exceptions.RequestException) as err:
+            raise UpdateFailed(str(err)) from err
 
         thermostats: list[Thermostat] = []
         valves: list[Valve] = []

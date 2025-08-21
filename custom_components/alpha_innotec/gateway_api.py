@@ -51,18 +51,20 @@ class GatewayAPI(BaseAPI):
 
             _LOGGER.debug("[%s] - body: %s", endpoint, urlencoded_body)
 
-            response = self.session.post("http://{hostname}/{endpoint}".format(hostname=self.api_host, endpoint=endpoint),
-                                     data=urlencoded_body,
-                                     headers={'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
-                                     )
+            response = self.session.post(
+                "http://{hostname}/{endpoint}".format(hostname=self.api_host, endpoint=endpoint),
+                data=urlencoded_body,
+                headers={'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
+            )
 
             self.request_count = self.request_count + 1
 
             _LOGGER.debug("[%s] - response code: %s", endpoint, response.status_code)
 
             json_response = response.json()
-        except Exception as exception:
-            _LOGGER.exception("Unable to fetch data from API: %s", exception)
+        except requests.exceptions.RequestException as exception:
+            _LOGGER.error("Unable to fetch data from API endpoint [%s]: %s", endpoint, exception)
+            raise
 
         _LOGGER.debug("[%s] - response body: %s", endpoint, json_response)
 
