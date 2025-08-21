@@ -11,6 +11,16 @@ from urllib3 import Retry
 _LOGGER = logging.getLogger(__name__)
 
 
+class AlphaInnotecApiError(Exception):
+    """Raised when the Alpha Innotec API returns an error."""
+
+    def __init__(self, message: str, endpoint: str | None = None) -> None:
+        if endpoint:
+            message = f"[{endpoint}] {message}"
+        super().__init__(message)
+        self.endpoint = endpoint
+
+
 class BaseAPI:
 
     def __init__(self, hostname: str, username: str, password: str) -> None:
