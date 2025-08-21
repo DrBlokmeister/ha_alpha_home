@@ -5,7 +5,7 @@ from urllib.parse import unquote
 
 import requests
 
-from .api import BaseAPI
+from .api import BaseAPI, AlphaInnotecApiError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -67,7 +67,8 @@ class GatewayAPI(BaseAPI):
         _LOGGER.debug("[%s] - response body: %s", endpoint, json_response)
 
         if not json_response['success']:
-            raise Exception('Failed to get data')
+            _LOGGER.error("[%s] - API response unsuccessful: %s", endpoint, json_response)
+            raise AlphaInnotecApiError("Failed to get data", endpoint)
         else:
             _LOGGER.debug('[%s] - successfully fetched data from API', endpoint)
 
