@@ -13,7 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class ControllerAPI(BaseAPI):
 
-    def call(self, endpoint: str, data: dict = None) -> dict:
+    def _call(self, endpoint: str, data: dict | None = None) -> dict:
         if data is None:
             data = {}
 
@@ -66,6 +66,14 @@ class ControllerAPI(BaseAPI):
 
         return json_response
 
+    def call(self, endpoint: str, data: dict | None = None) -> dict:
+        try:
+            return self._call(endpoint, data)
+        except (AlphaInnotecApiError, requests.exceptions.RequestException) as err:
+            _LOGGER.warning("Error calling controller API: %s, trying to re-login", err)
+            self.login()
+            return self._call(endpoint, data)
+
     def login(self):
         response = self.session.post("http://" + self.api_host + "/api/user/token/challenge", data={
             "udid": self.udid
@@ -93,7 +101,7 @@ class ControllerAPI(BaseAPI):
 
         self.device_token_decrypted = self.decrypt2(response.json()['devicetoken_encrypted'], self.password)
 
-        response = self.call("admin/login/check")
+        response = self._call("admin/login/check")
 
         if not response['success']:
             raise Exception("Unable to login")

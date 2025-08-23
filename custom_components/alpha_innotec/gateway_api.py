@@ -22,7 +22,7 @@ class GatewayAPI(BaseAPI):
         self.last_request_signature: str | None = None
         self.udid: str = "homeassistant"
 
-    def call(self, endpoint: str, data: dict = None) -> dict:
+    def _call(self, endpoint: str, data: dict | None = None) -> dict:
         if data is None:
             data = {}
 
@@ -76,8 +76,16 @@ class GatewayAPI(BaseAPI):
 
         return json_response
 
+    def call(self, endpoint: str, data: dict | None = None) -> dict:
+        try:
+            return self._call(endpoint, data)
+        except (AlphaInnotecApiError, requests.exceptions.RequestException) as err:
+            _LOGGER.warning("Error calling gateway API: %s, trying to re-login", err)
+            self.login()
+            return self._call(endpoint, data)
+
     def login(self):
-        response = self.call("admin/login/check")
+        response = self._call("admin/login/check")
 
         if not response['success']:
             raise Exception("Unable to login")
