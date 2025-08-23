@@ -33,10 +33,15 @@ class AlphaInnotecCoordinator(DataUpdateCoordinator):
         self.gateway_api = hass.data[DOMAIN][self.config_entry.entry_id]['gateway_api']
 
     async def _async_update_data(self) -> dict[str, list[Valve | Thermostat]]:
-        try:
+        async def _fetch() -> tuple[dict, dict, dict]:
             db_modules: dict = await self.hass.async_add_executor_job(self.gateway_api.db_modules)
             all_modules: dict = await self.hass.async_add_executor_job(self.gateway_api.all_modules)
             room_list: dict = await self.hass.async_add_executor_job(self.controller_api.room_list)
+
+            return db_modules, all_modules, room_list
+
+        try:
+            db_modules, all_modules, room_list = await _fetch()
         except (AlphaInnotecApiError, requests.exceptions.RequestException) as err:
             raise UpdateFailed(str(err)) from err
 
